@@ -1,7 +1,7 @@
 (require :def-properties (merge-pathnames #p"cl-def-properties/module.lisp" (uiop/pathname:pathname-directory-pathname *load-pathname*)))
 
-(defpackage :swank-info
-  (:use :cl :swank :def-properties)
+(defpackage :slynk-info
+  (:use :cl :slynk :def-properties)
   (:export
    :texinfo-source-for-function
    :texinfo-source-for-package
@@ -9,7 +9,7 @@
    :texinfo-source-for-apropos
    :texinfo-source-for-symbol))
 
-(in-package :swank-info)
+(in-package :slynk-info)
 
 (defun aget (alist key)
   (cdr (assoc key alist :test 'equalp)))
@@ -155,7 +155,7 @@
       (write-string "@end defun" stream))
   (terpri stream))
 
-(swank::defslimefun texinfo-source-for-package (package-name)
+(slynk-api:defslyfun texinfo-source-for-package (package-name)
   (with-output-to-string (s)
     (render-texinfo-source-for-package (string-upcase package-name) s)))
 
@@ -217,17 +217,57 @@
     (ln)
     (fmt "@bye")))
 
-(swank::defslimefun texinfo-source-for-symbol (symbol-name)
+(slynk-api:defslyfun texinfo-source-for-symbol (symbol-name)
   (with-output-to-string (s)
     (render-texinfo-source-for-symbol (read-from-string symbol-name) s)))
 
-(swank::defslimefun texinfo-source-for-apropos (name &optional external-only
-                                                     case-sensitive package)
+;; begin taken from swank and adapted a little bit to support the next function
+
+(defun symbol-status (symbol &optional (package (symbol-package symbol)))
+  "Returns one of 
+
+  :INTERNAL  if the symbol is _present_ in PACKAGE as an _internal_ symbol,
+
+  :EXTERNAL  if the symbol is _present_ in PACKAGE as an _external_ symbol,
+
+  :INHERITED if the symbol is _inherited_ by PACKAGE through USE-PACKAGE,
+             but is not _present_ in PACKAGE,
+
+  or NIL     if SYMBOL is not _accessible_ in PACKAGE.
+"
+  (when package     ; may be NIL when symbol is completely uninterned.
+    (check-type symbol symbol) (check-type package package)
+    (multiple-value-bind (present-symbol status)
+        (find-symbol (symbol-name symbol) package)
+      (and (eq symbol present-symbol) status))))
+
+(defun symbol-external-p (symbol &optional (package (symbol-package symbol)))
+  "True if SYMBOL is external in PACKAGE.
+If PACKAGE is not specified, the home package of SYMBOL is used."
+  (eq (symbol-status symbol package) :external))
+
+(defun apropos-symbols (string external-only case-sensitive package)
+  (let ((packages (or package (remove (find-package :keyword)
+                                      (list-all-packages))))
+        (matcher  (slynk-backend:make-apropos-matcher string case-sensitive))
+        (result))
+    (with-package-iterator (next packages :external :internal)
+      (loop (multiple-value-bind (morep symbol) (next)
+              (cond ((not morep) (return))
+                    ((and (if external-only (symbol-external-p symbol) t)
+                          (funcall matcher symbol))
+                     (push symbol result))))))
+    result))
+
+;; end
+
+(slynk-api:defslyfun texinfo-source-for-apropos (name &optional external-only
+						      case-sensitive package)
   "Make an apropos search for Emacs. Show the result in an Info buffer."
   (let ((package (when package
-                   (or (swank::parse-package package)
+                   (or (slynk::parse-package package)
                        (error "No such package: ~S" package)))))
-    (let ((symbols (swank::apropos-symbols name external-only case-sensitive package)))
+    (let ((symbols (apropos-symbols name external-only case-sensitive package)))
       (with-output-to-string (s)
         (render-texinfo-source-for-symbols
          ;;(format nil "Apropos: ~a" name)
@@ -415,7 +455,7 @@ is replaced with replacement."
       (fmtln "@printindex fn")
       (fmt "@bye"))))
 
-(swank::defslimefun texinfo-source-for-system (system-name &key (use-pandoc t))
+(slynk-api:defslyfun texinfo-source-for-system (system-name &key (use-pandoc t))
   (with-output-to-string (s)
     (render-texinfo-source-for-system
      (asdf:find-system system-name) s
@@ -447,4 +487,4 @@ is replaced with replacement."
 ;; (render-parsed-docstring (parse-docstring "funcall parse-docstring" nil) t)
 ;; (render-parsed-docstring (parse-docstring "asdf" '(asdf)) t)
 
-(provide :swank-info)
+(provide :slynk-info)

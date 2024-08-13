@@ -1,6 +1,6 @@
 (require :montezuma)
 
-(in-package :swank-help)
+(in-package :slynk-help)
 
 ;; Apropos using a Montezuma index
 

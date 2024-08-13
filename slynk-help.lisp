@@ -4,7 +4,7 @@
 (require :uiop)
 (require :alexandria)
 
-(defpackage :swank-help
+(defpackage :slynk-help
   (:use :cl :def-properties)
   (:shadow #:apropos #:apropos-list #:describe)
   (:export
@@ -18,7 +18,7 @@
    :describe)
   (:documentation "Utilities for augmented help."))
 
-(in-package :swank-help)
+(in-package :slynk-help)
 
 (defun aget (alist key)
   (cdr (assoc key alist :test 'equalp)))
@@ -57,9 +57,9 @@
 (defun read-emacs-package-info (package-name &optional shallow)
   (let ((package (or (and (typep package-name 'package)
                           package-name)
-                     ;; we use SWANK::PARSE-PACKAGE instead of CL:FIND-PACKAGE here
+                     ;; we use SLYNK::PARSE-PACKAGE instead of CL:FIND-PACKAGE here
                      ;; to support alternative values of CL:*PRINT-CASE*
-                     (swank::parse-package package-name)
+                     (slynk::parse-package package-name)
                      (error "Package not found: ~a" package-name))))
     (list (cons :type :package)
           (cons :name (package-name package))
@@ -99,22 +99,22 @@
              (read-emacs-system-info system t))
            (asdf:registered-systems))))
 
-(swank::defslimefun apropos-documentation-for-emacs
+(slynk::defslimefun apropos-documentation-for-emacs
     (pattern &optional external-only case-sensitive package)
   "Make an apropos search in docstrings for Emacs.
 The result is a list of property lists."
   (let ((package (if package
-                     (or (swank::parse-package package)
+                     (or (slynk::parse-package package)
                          (error "No such package: ~S" package)))))
     ;; The MAPCAN will filter all uninteresting symbols, i.e. those
     ;; who cannot be meaningfully described.
-    (mapcan (swank::listify #'swank::briefly-describe-symbol-for-emacs)
+    (mapcan (slynk::listify #'slynk::briefly-describe-symbol-for-emacs)
             (sort (remove-duplicates
                    (apropos-symbols-documentation pattern
                                                   :external-only external-only
                                                   :case-sensitive case-sensitive
                                                   :package package))
-                  #'swank::present-symbol-before-p))))
+                  #'slynk::present-symbol-before-p))))
 
 (defun some-documentation (symbol)
   ;; Trick to disable warnings from DOCUMENTATION function
@@ -143,7 +143,7 @@ The result is a list of property lists."
       (loop (multiple-value-bind (morep symbol) (next)
               (when (not morep) (return))
               (let ((doc (some-documentation symbol)))
-                (when (or (not external-only) (swank::symbol-external-p symbol))
+                (when (or (not external-only) (slynk::symbol-external-p symbol))
                   (let ((name-and-doc (if doc
                                           (format nil "~a~%~a" symbol doc)
                                           (symbol-name symbol))))
@@ -180,7 +180,7 @@ If PRINT-DOCSTRING the the results docstrings are made part of the output."
       (loop (multiple-value-bind (morep symbol) (next)
               (when (not morep) (return))
               (let ((doc (some-documentation symbol)))
-                (when (or (not external-only) (swank::symbol-external-p symbol))
+                (when (or (not external-only) (slynk::symbol-external-p symbol))
                   (let ((name-and-doc (if doc
                                           (format nil "~a~%~a" symbol doc)
                                           (symbol-name symbol))))
@@ -192,7 +192,7 @@ If PRINT-DOCSTRING the the results docstrings are made part of the output."
     (values)))
 
 (defun apropos-list (string-designator &optional package external-only)
-  "Like SWANK-HELP:APROPOS, except that it returns a list of the symbols found instead of describing them."
+  "Like SLYNK-HELP:APROPOS, except that it returns a list of the symbols found instead of describing them."
   (let ((packages (or package (remove (find-package :keyword)
                                       (list-all-packages))))
         (matcher (make-apropos-documentation-matcher
@@ -202,7 +202,7 @@ If PRINT-DOCSTRING the the results docstrings are made part of the output."
       (loop (multiple-value-bind (morep symbol) (next)
               (when (not morep) (return))
               (let ((doc (some-documentation symbol)))
-                (when (or (not external-only) (swank::symbol-external-p symbol))
+                (when (or (not external-only) (slynk::symbol-external-p symbol))
                   (let ((name-and-doc (if doc
                                           (format nil "~a~%~a" symbol doc)
                                           (symbol-name symbol))))
@@ -258,7 +258,7 @@ If PRINT-DOCSTRING the the results docstrings are made part of the output."
           (terpri out)
           (terpri out))))))
 
-;; (describe (find-package :swank-help))
+;; (describe (find-package :slynk-help))
 
 
-(provide :swank-help)
+(provide :slynk-help)
