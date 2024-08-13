@@ -8,6 +8,10 @@ SLIME-INFO uses Emacs info-mode for displaying Common Lisp documentation.
 
 ![slime-help](slime-help.png "slime-help screenshot")
 
+# Sly fork!
+
+This fork also includes the sly port of cl-def-properties
+
 ## Install
 
 ℹ️ Please consider using [SLIME :star:](https://github.com/mmontone/slime-star), that comes with this extension preinstalled.
