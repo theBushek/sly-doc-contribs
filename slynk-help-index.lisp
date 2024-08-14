@@ -1,3 +1,4 @@
+(ql:quickload "montezuma")
 (require :montezuma)
 
 (in-package :slynk-help)

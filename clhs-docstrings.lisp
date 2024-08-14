@@ -1,6 +1,8 @@
 (require :clhs)
 (require :alexandria)
-(require :hyperspec-lookup)
+;; (require :hyperspec-lookup)
+;; for some reason it gives out a runtime error - a package that provided
+;; :hyperspec-lookup probably doesnt anymore?
 (require :str)
 
 (defpackage :clhs-docstrings

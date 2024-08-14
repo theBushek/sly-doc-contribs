@@ -6,7 +6,7 @@
 
 (defpackage :slynk-help
   (:use :cl :def-properties)
-  (:shadow #:apropos #:apropos-list #:describe)
+  (:shadow #:apropos #:apropos-list #:describe #:apropos-documentation-for-emacs)
   (:export
    :read-emacs-symbol-info
    :read-emacs-package-info
@@ -15,7 +15,8 @@
    :read-emacs-systems-info
    :apropos
    :apropos-list
-   :describe)
+   :describe
+   :apropos-documentation-for-emacs)
   (:documentation "Utilities for augmented help."))
 
 (in-package :slynk-help)
@@ -99,7 +100,7 @@
              (read-emacs-system-info system t))
            (asdf:registered-systems))))
 
-(slynk::defslimefun apropos-documentation-for-emacs
+(slynk-api:defslyfun apropos-documentation-for-emacs
     (pattern &optional external-only case-sensitive package)
   "Make an apropos search in docstrings for Emacs.
 The result is a list of property lists."
@@ -108,13 +109,13 @@ The result is a list of property lists."
                          (error "No such package: ~S" package)))))
     ;; The MAPCAN will filter all uninteresting symbols, i.e. those
     ;; who cannot be meaningfully described.
-    (mapcan (slynk::listify #'slynk::briefly-describe-symbol-for-emacs)
+    (mapcan (slynk::listify #'slynk-apropos::briefly-describe-symbol-for-emacs)
             (sort (remove-duplicates
-                   (apropos-symbols-documentation pattern
+		   (apropos-symbols-documentation pattern
                                                   :external-only external-only
                                                   :case-sensitive case-sensitive
                                                   :package package))
-                  #'slynk::present-symbol-before-p))))
+                  #'slynk-apropos::present-symbol-before-p))))
 
 (defun some-documentation (symbol)
   ;; Trick to disable warnings from DOCUMENTATION function
